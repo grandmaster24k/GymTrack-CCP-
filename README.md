@@ -54,7 +54,7 @@ The project follows a modular design. It uses a custom header file, `tracker.h`,
 
 ---
 
-## 🚀 Planned Features
+## 🚀 Features
 The application features an interactive, console-driven menu with the following capabilities:
 
 * 📝 **Log Sets** — Record workout sets and exercise weights.
