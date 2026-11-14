@@ -1,0 +1,680 @@
+================================================================================
+                    GYMTRACK - GYM & HEALTH TRACKER
+                    Complete Project Documentation
+================================================================================
+
+A modular , console-based Gym & Health Tracking System written in C.
+
+Language      : C (standard library only, no external dependencies)
+Type               : Console application (CLI) & Fully Working Application(GUI)
+Course           : 1st Year CCP (Complex Coding Project)
+Institute         : NED University of Engineering & Technology
+Project           : GymTrack - Gym & Health Tracker
+Developed as : 1st Year CCP (Complex Coding Project)
+Members:
+	*Syed Mohid Ali 
+	CT-26275 ( lead )
+
+	*Syed Huzaifa Ahmed
+	CT-26284 ( Co - lead )
+
+	*Sarah Javaid
+	CT-26268 ( Member )
+
+	*Laiba Azam Khan
+	CT-26271 ( Member )
+--------------------------------------------------------------------------------
+TABLE OF CONTENTS
+--------------------------------------------------------------------------------
+  1.  Project Introduction
+  2.  Features
+  3.  Project Structure
+  4.  Data Structures
+  5.  Constants and Configuration
+  6.  Module Reference (every function, file by file)
+        6.1  tracker.h   - shared header
+        6.2  main.c      - program entry point
+        6.3  input.c     - validated input
+        6.4  features.c  - converter, calories, plans, PR
+        6.5  workout.c   - logging, search, sort, edit, delete
+        6.6  storage.c   - save and load
+  7.  Data File Format (workouts.txt)
+  8.  Validation Rules
+  9.  Algorithms and Programming Concepts Used
+ 10.  How to Build and Run
+ 11.  Sample Usage and Output
+ 12.  Future Improvements
+
+================================================================================
+1. PROJECT INTRODUCTION
+================================================================================
+
+GymTrack is a console-based Gym & Health Tracking System developed in C. It
+helps a user:
+
+  - log workouts (exercise, sets, weight, reps, date),
+  - review and organise their workout history,
+  - generate simple workout plans by muscle group,
+  - estimate the daily calories needed to reach a goal body weight,
+  - keep track of personal records (PRs).
+
+Key design points:
+
+  * Dual-unit display
+      Every weight is shown in both kilograms (kg) and pounds (lb).
+
+  * Data persistence
+      Workout records are stored in a text file (workouts.txt) using C file
+      handling, so data survives between sessions.
+
+  * Modular design
+      The code is split into several .c files that share one custom header,
+      tracker.h. Each file has one clear responsibility.
+
+  * Defensive input handling
+      All user input is read as text and validated before use, so wrong or
+      oversized input never crashes the program.
+
+  * Safe storage
+      Saving uses a temporary file plus a backup file, and loading validates
+      every line, so a failed save or a corrupted file cannot destroy
+      existing data.
+
+
+================================================================================
+2. FEATURES
+================================================================================
+
+The table shows each planned menu feature and the function that implements it.
+
+  Feature            What it does                          Implemented by
+  -----------------  ------------------------------------  ------------------
+  Log Sets           Record exercise, sets, weight, reps   addSets()
+  View History       Display recorded sets                 showWorkouts()
+  Search             Find sets by exercise name or by ID   showWorkouts(),
+                                                           findById()
+  Sort History       Order records by date or by ID        sortEntries()
+  Edit Entry         Change exercise, weight, reps         changeWorkout(db,0)
+  Delete Entry       Remove a set (with confirmation)      changeWorkout(db,1)
+  Workout Plans      Build a plan from chosen muscles      generatePlan()
+  Calorie Estimate   Daily calories for bulk/cut/maintain  calculateCalories()
+  Personal Records   Highest weight and best reps          showPR()
+  Save Data          Write records to file                 saveData()
+  Load Data          Read records from file                loadData()
+  Weight Converter   kg <-> lb                             convertWeight()
+  Exit               Leave the program                     (in main menu)
+
+
+================================================================================
+3. PROJECT STRUCTURE
+================================================================================
+
+  GymTrack/
+  |-- tracker.h     Shared header: includes, constants, structs, prototypes
+  |-- main.c        Program entry point and (planned) main menu
+  |-- input.c       Strict input reading and validation
+  |-- features.c    Weight converter, calorie calculator, plan generator, PR
+  |-- workout.c     Add, show, validate, sort, search, edit, delete
+  |-- storage.c     Save to file and load from file
+  `-- workouts.txt  Data file, created automatically on first save
+
+File descriptions
+-----------------
+  tracker.h   Header file containing shared function declarations, the data
+              structures and the constants used by every other file.
+  main.c      Contains the main program logic and core menu system.
+  features.c  Implements features like calorie conversion and workout plan
+              generation (plus the weight converter and PR display).
+  input.c     Handles strict user input validation and error handling.
+  workout.c   Manages workout entries: logging, validation, sorting and
+              searching.
+  storage.c   Manages workout data storage, file retrieval and saving.
+
+How the files connect
+---------------------
+  Every .c file starts with  #include "tracker.h".  The header holds all
+  shared declarations, so any file can call any function declared there.
+  The linker joins the separately compiled files into one program.
+
+  main.c ----> uses everything
+  features.c -> uses input.c (readInt, readDouble) and the WorkoutDB struct
+  workout.c --> uses input.c (readLine, readInt, readDouble, ValidDate) and
+                features.c (convertWeight)
+  storage.c --> uses workout.c (validEntry, reserveEntries)
+  input.c ----> standalone (only the C standard library)
+
+
+================================================================================
+4. DATA STRUCTURES
+================================================================================
+
+4.1  WorkoutEntry  -  one logged set
+--------------------------------------------------------------------------------
+  typedef struct {
+      int  id;                  // unique ID of this entry (record ID)
+      int  sessionId;           // same for one session, different otherwise
+      char exercise[NAME_LEN];  // exercise name (max 47 characters)
+      int  weight100;           // weight in kg x 100 (avoids float errors)
+      int  reps;                // repetitions performed
+      int  setNumber;           // 1, 2, 3 ... within the session
+      char date[11];            // "YYYY-MM-DD" plus terminating '\0'
+  } WorkoutEntry;
+
+  Why weight100?
+    Floating-point numbers cannot store values like 0.1 exactly. GymTrack
+    stores the weight as a whole number of hundredths of a kilogram.
+    Example: 82.5 kg is stored as 8250. It is divided by 100.0 only when it
+    is displayed or converted.
+
+  Every set is its own record. Three sets of bench press = three entries,
+  each with a different id and setNumber, all sharing one sessionId.
+
+4.2  WorkoutDB  -  the in-memory database
+--------------------------------------------------------------------------------
+  typedef struct {
+      WorkoutEntry *data;   // dynamic array of entries (malloc/realloc)
+      size_t count;         // how many entries are stored
+      size_t capacity;      // how many entries the array can hold
+      int    nextId;        // next record ID to hand out
+      int    nextSession;   // next session ID to hand out
+  } WorkoutDB;
+
+  The array grows on demand (see reserveEntries). count <= capacity always.
+  A fresh database is created with  WorkoutDB db = {0};  which sets the
+  pointer to NULL and every number to 0. Before the first set is added,
+  nextId and nextSession must be set to 1 (see section 12).
+
+
+================================================================================
+5. CONSTANTS AND CONFIGURATION (tracker.h)
+================================================================================
+
+  Constant      Value          Meaning
+  ------------  -------------  ----------------------------------------------
+  NAME_LEN      48             Size of the exercise-name buffer (47 chars+'\0')
+  MAX_RECORDS   10000          Hard limit on the number of stored sets
+  DATA_FILE     "workouts.txt" Default save/load file name
+  KG_TO_LB      2.20462        Conversion factor, kilograms to pounds
+
+  Standard headers included: stdio.h, stdlib.h, string.h, ctype.h, errno.h,
+  limits.h, math.h, stddef.h.
+
+
+================================================================================
+6. MODULE REFERENCE
+================================================================================
+
+--------------------------------------------------------------------------------
+6.1  tracker.h
+--------------------------------------------------------------------------------
+Uses an include guard (#ifndef TRACKER_H ... #endif) so the header is never
+processed twice in the same file. Contains: standard #includes, constants,
+the two structs and the prototypes of all functions listed below.
+
+--------------------------------------------------------------------------------
+6.2  main.c
+--------------------------------------------------------------------------------
+main() is the entry point and controls the whole program.
+It creates the WorkoutDB
+database, loads any saved records from workouts.txt, and then runs the main
+menu in a loop. The user's choice is read with readInt() so only valid
+options are accepted, and a switch statement calls the matching function:
+addSets(), showWorkouts(), sortEntries(), changeWorkout(), generatePlan(),
+calculateCalories(), showPR(), saveData() and loadData(). The loop repeats
+until the user chooses Exit, after which the memory allocated for the
+database is released with free(). 
+--------------------------------------------------------------------------------
+6.3  input.c  -  strict user input
+--------------------------------------------------------------------------------
+Rule used throughout: never trust the user. Everything is read as a line of
+text with fgets(), then converted and checked. If the input is wrong, the
+program explains the problem and asks again.
+
+  int readLine(const char *prompt, char *out, size_t size)
+  ----------------------------------------------------------
+  Purpose : Prints the prompt and safely reads one line into "out".
+  Returns : 1 on success, 0 on end-of-input (EOF / Ctrl+D / Ctrl+Z).
+  How     :
+    1. Loops until a usable line is read.
+    2. fgets() reads at most size-1 characters, so the buffer cannot
+       overflow.
+    3. strcspn() finds the newline and replaces it with '\0'.
+    4. If the line was longer than the buffer, the rest of the line is
+       discarded and "Input too long. Please try again." is shown.
+
+  int readInt(const char *prompt, int low, int high, int *out)
+  ----------------------------------------------------------
+  Purpose : Reads a whole number between low and high (inclusive).
+  Returns : 1 on success (value stored in *out), 0 on end-of-input.
+  How     : Uses readLine(), then strtol(). Accepted only if
+              - at least one digit was read,
+              - nothing but spaces follows the number,
+              - no overflow occurred (errno != ERANGE),
+              - the value is within [low, high].
+            Otherwise prints "Enter a whole number from <low> to <high>."
+            and repeats.
+  Example : readInt("Choice: ", 1, 4, &choice) accepts only 1, 2, 3 or 4.
+
+  int readDouble(const char *prompt, double low, double high, double *out)
+  ----------------------------------------------------------
+  Purpose : Reads a decimal number between low and high.
+  Returns : 1 on success, 0 on end-of-input.
+  How     : Same as readInt() but uses strtod() and also rejects non-finite
+            values (nan, inf) with isfinite().
+
+  int ValidDate(const char *s)
+  ----------------------------------------------------------
+  Purpose : Checks that a string is a real calendar date in the format
+            YYYY-MM-DD.
+  Returns : 1 if valid, 0 if not.
+  Checks  :
+    1. Length is exactly 10, with '-' at positions 4 and 7.
+    2. All other characters are digits.
+    3. Year is 1900-2099 and month is 1-12.
+    4. Day is valid for that month.
+    5. Leap years are handled: divisible by 400, or divisible by 4 but not
+       by 100 (so 2024-02-29 is valid, 2023-02-29 is not).
+
+--------------------------------------------------------------------------------
+6.4  features.c  -  converter, calories, plans, PR
+--------------------------------------------------------------------------------
+
+  void convertWeight(double value, int toPounds, double *out)
+  ----------------------------------------------------------
+  Purpose : Converts a weight between kilograms and pounds.
+  Inputs  : value    - the weight to convert
+            toPounds - 1 = kg to lb,  0 = lb to kg
+            out      - pointer that receives the result
+  Formula : kg to lb:  value x 2.20462
+            lb to kg:  value / 2.20462
+  Notes   : Does nothing if "out" is NULL.
+
+  void calculateCalories(void)
+  ----------------------------------------------------------
+  Purpose : Estimates daily calories needed to reach a goal weight in a
+            chosen time, and labels the result as bulking, cutting or
+            maintenance.
+  Steps   :
+    1. Ask the unit: 1 = kg, 2 = lb.
+    2. Choose the energy factor: 7700 kcal per kg, or 3500 kcal per lb.
+    3. Ask for: current weight, goal weight, maintenance calories
+       (kcal/day) and duration in months.
+    4. Compute:
+         weightDifference = goalWeight - currentWeight
+         days             = months x 30.44
+         dailyAdjustment  = (weightDifference x factor) / days
+         dailyCalories    = maintenanceCalories + dailyAdjustment
+    5. Print the plan:
+         difference > 0  and calories > 0  ->  BULKING PLAN
+         difference < 0  and calories > 0  ->  CUTTING PLAN
+         difference == 0                   ->  MAINTENANCE PLAN
+         anything else                     ->  "calculated calorie target is
+                                               invalid" (goal too extreme)
+    6. The weight to gain or lose is printed in both units.
+  Input limits (converted to lb automatically if unit 2 is chosen):
+    current weight 10-300 kg, goal weight 10-400 kg,
+    maintenance calories 1-10000, duration 0.01-120 months.
+
+  void generatePlan(void)
+  ----------------------------------------------------------
+  Purpose : Builds a printed workout plan from the muscle groups and
+            exercise variations the user selects.
+  Data    : Three tables define the content.
+              groups[7]               Chest, Back, Shoulders, Biceps,
+                                      Triceps, Legs, Abs
+              movements[7][3]         3 movement slots per muscle group
+              exerciseOptions[7][3][2] 2 exercise variations per slot
+            (7 muscles x 3 movements x 2 variations.)
+  Steps   :
+    1. Ask how many muscle groups to train (1-4).
+    2. Set sets-per-exercise from the group count:
+         1 group  -> 6 sets
+         2 groups -> 3 sets
+         3 or 4   -> 2 sets
+       (More groups means fewer sets each, so the session length stays
+       reasonable.)
+    3. Show the 7 muscle groups and ask the user to pick that many.
+       The same group cannot be picked twice.
+    4. For each chosen group, show its 3 movements and let the user choose
+       variation 1 or 2 for each.
+    5. Print the final plan: exercise name, sets, reps ("8-12 or to
+       failure") and rest time (180 seconds).
+
+  void showPR(WorkoutDB *db, const char *exercise)
+  ----------------------------------------------------------
+  Purpose : Shows personal records. If "exercise" is an empty string it
+            shows every exercise; otherwise only the named one.
+  Output  : For each exercise:
+              1. The highest weight ever recorded (kg and lb).
+              2. For each distinct weight used, the most reps achieved at
+                 that weight (kg and lb).
+  How     : Plain nested loops over the database. A "seen before" check
+            makes sure each exercise (and each weight within it) is printed
+            once even if it appears in many rows.
+  Edge    : Prints "No matching exercise records." if nothing matches.
+  Note    : PRs are never stored; they are recomputed from the history each
+            time, so editing or deleting a set automatically keeps them
+            correct.
+
+--------------------------------------------------------------------------------
+6.5  workout.c  -  logging, searching, sorting, editing
+--------------------------------------------------------------------------------
+
+  int findById(const WorkoutEntry *a, int left, int right, int id)
+  ----------------------------------------------------------
+  Purpose : Finds the array position of a record with a given ID.
+  Returns : The index, or -1 if not found.
+  Method  : RECURSIVE BINARY SEARCH. Looks at the middle element; if the ID
+            is smaller it searches the left half, otherwise the right half,
+            calling itself on the smaller range. Base case: left > right.
+  Rule    : The array MUST be sorted by id first (changeWorkout() does
+            sortEntries(db, 0) before calling it).
+  Speed   : O(log n).
+
+  void addSets(WorkoutDB *db)
+  ----------------------------------------------------------
+  Purpose : Logs one exercise for one session, with several sets.
+  Steps   :
+    1. Check that Session IDs and Record IDs have not run out.
+    2. Ask for the date until a valid one is entered (ValidDate).
+    3. Ask for the exercise name until it passes validEntry().
+    4. Ask for the number of sets (1-100).
+    5. For each set ask for weight in kg (0-1000, rounded to 0.01 kg) and
+       reps (1-1000).
+    6. Convert kg to weight100 (kg x 100 + 0.5, rounded).
+    7. Give the set a unique ID, validate it, make room with
+       reserveEntries(), copy it into the database and increase the counts.
+    8. After the first set, nextSession is increased so the next logging
+       session gets a new Session ID.
+    9. Show the added set on screen.
+  Safety  : If anything fails midway, sets already saved are kept and the
+            function stops cleanly.
+
+  int reserveEntries(WorkoutDB *db, size_t need)
+  ----------------------------------------------------------
+  Purpose : Makes sure the dynamic array can hold at least "need" entries.
+  Returns : 1 on success, 0 on failure (limit reached or no memory).
+  How     :
+    - If capacity is already enough, return 1.
+    - If need > MAX_RECORDS (10000), return 0.
+    - Otherwise grow capacity in steps of 8 (limited to MAX_RECORDS).
+    - Uses malloc() for the first allocation and realloc() afterwards,
+      storing the result in a temporary pointer first. If allocation fails,
+      the original array is left untouched (no data loss).
+
+  void showWorkouts(const WorkoutDB *db, const char *exercise, int recordId)
+  ----------------------------------------------------------
+  Purpose : Prints a table of sets. One function covers viewing, filtering
+            and searching.
+  Filters :
+    exercise == ""   and recordId == 0  -> show everything
+    exercise = "Squat"                  -> show only that exercise
+    recordId = 12                       -> show only that record
+  Columns : ID, Session, Date, Set number, weight in kg, weight in lb, Reps;
+            the exercise name is printed on the next line.
+  Ends with a count of the sets shown.
+
+  int validEntry(const WorkoutDB *db, const WorkoutEntry *e, int ignoredId)
+  ----------------------------------------------------------
+  Purpose : The single "gatekeeper" every record passes through - before
+            being added, after being edited, and while loading a file.
+  Returns : 1 if valid, 0 if not.
+  Row checks (the record on its own):
+    - id and sessionId are between 1 and INT_MAX-1
+    - weight100 between 0 and 100000 (0 to 1000 kg)
+    - reps between 1 and 1000
+    - setNumber between 1 and 10000
+    - date passes ValidDate()
+    - exercise name has only printable ASCII (32-126), contains no '|'
+      character and contains at least one letter
+  Relationship checks (against all other records):
+    - the id must be unique
+    - records in the same session must have the same date
+    - records in the same session cannot repeat the same exercise with the
+      same set number
+  ignoredId : the ID of a record to skip during comparison. Used when
+              editing, so a record is not compared against its own old copy.
+              Pass 0 when adding a new record.
+
+  void sortEntries(WorkoutDB *db, int byDate)
+  ----------------------------------------------------------
+  Purpose : Sorts the history.
+            byDate = 1 -> by date (oldest first)
+            byDate = 0 -> by record ID
+  Method  : INSERTION SORT. Each record is taken in turn and shifted left
+            into its correct place among the already-sorted records.
+  Tie-break: if two records have the same date, the smaller record ID comes
+            first, so sorting is stable and predictable.
+  Note    : Dates in YYYY-MM-DD form sort correctly with strcmp().
+
+  void changeWorkout(WorkoutDB *db, int deleting)
+  ----------------------------------------------------------
+  Purpose : One function for both editing and deleting a set.
+            deleting = 1 -> delete,  deleting = 0 -> edit
+  Steps   :
+    1. Ask for the Record ID.
+    2. Sort by ID and use findById() (binary search) to locate it.
+       "Record not found." if missing.
+    3. Show the current entry.
+    4. DELETE: ask "Delete this set? 1=yes, 0=no". On yes, shift every later
+       record one position left and reduce count by 1.
+    5. EDIT: work on a temporary copy. Ask for the corrected exercise name,
+       weight (kg) and reps. Session, date and set number cannot be changed
+       here (log again to fix those). The copy is checked by validEntry()
+       with ignoredId = the record's own ID. Only if valid does it replace
+       the original; otherwise the old row is kept.
+    6. Print a confirmation. Because PRs are calculated on demand, they
+       update automatically.
+
+--------------------------------------------------------------------------------
+6.6  storage.c  -  files
+--------------------------------------------------------------------------------
+
+  int saveData(const WorkoutDB *db, const char *path)
+  ----------------------------------------------------------
+  Purpose : Saves the whole database to a text file safely.
+  Returns : 1 on success, 0 on failure.
+  Method  : "Write to temp, then swap":
+    1. Build two helper names from the path:  <path>.tmp  and  <path>.bak
+       (snprintf with a size limit prevents buffer overflow).
+    2. Write everything to <path>.tmp. Check every write and the fclose().
+       If anything fails, delete the temp file and stop - the existing save
+       is untouched.
+    3. Delete any old <path>.bak.
+    4. Rename the current <path> to <path>.bak (the previous save becomes
+       the backup).
+    5. Rename <path>.tmp to <path>. If this fails, the backup is renamed
+       back, restoring the previous save.
+  Result  : The save file is never left half-written, and the last good
+            version is always available as workouts.txt.bak.
+
+  int loadData(WorkoutDB *db, const char *path)
+  ----------------------------------------------------------
+  Purpose : Loads records from the save file into the database.
+  Returns : 1 on success (or if no file exists yet), 0 if the file is bad.
+  Method  : "Check everything first, replace only if all is good":
+    1. If the file does not exist, print "No data file; current records
+       unchanged." and return 1 (normal on first run).
+    2. Read the file one bounded line at a time (max 255 characters;
+       lines that are too long or contain a NUL character are rejected).
+    3. Line 1 must be the header  HT1|nextId|nextSession.
+    4. Every other line is parsed with sscanf using bounded patterns
+       (numbers are read as text first, then converted with strtol, so
+       no number can overflow).
+    5. Each record is run through validEntry() and must also have
+       id < nextId and sessionId < nextSession.
+    6. Records go into a temporary database ("checked").
+    7. Only if the WHOLE file is valid are the live records replaced.
+       Otherwise "Load rejected near line N; old records retained." is
+       shown and the current records stay exactly as they were.
+    8. The temporary array is freed in every case.
+
+
+================================================================================
+7. DATA FILE FORMAT (workouts.txt)
+================================================================================
+
+A plain text file, one record per line, fields separated by the pipe
+character '|'. The exercise name is last because it is the only free-text
+field (and names cannot contain '|', see validEntry).
+
+  Line 1 (header):
+      HT1|<nextId>|<nextSession>
+
+  Lines 2..N (records):
+      <id>|<sessionId>|<date>|<setNumber>|<reps>|<weight100>|<exercise>
+
+Example:
+
+      HT1|4|2
+      1|1|2026-03-10|1|10|6000|Barbell bench press
+      2|1|2026-03-10|2|8|6500|Barbell bench press
+      3|1|2026-03-10|3|6|7000|Barbell bench press
+
+Reading the example:
+  - nextId is 4, nextSession is 2 (the next new records get these numbers).
+  - Record 2: session 1, 10 March 2026, set 2, 8 reps, weight100 = 6500,
+    i.e. 65.00 kg (about 143.30 lb).
+
+"HT1" is a format label (version 1) so the program can tell its own files
+from other text files. Backup file: workouts.txt.bak. Temporary file during
+saving: workouts.txt.tmp.
+
+
+================================================================================
+8. VALIDATION RULES (summary)
+================================================================================
+
+  Item                    Rule
+  ----------------------  --------------------------------------------------
+  Menu / whole numbers    Integer within the allowed range, nothing extra
+  Decimal numbers         Finite number within the allowed range
+  Date                    YYYY-MM-DD, year 1900-2099, real day for the month,
+                          leap years handled
+  Exercise name           Printable ASCII, max 47 characters, at least one
+                          letter, no '|'
+  Number of sets          1 to 100 per logging session
+  Weight                  0 to 1000 kg, stored to 0.01 kg precision
+  Repetitions             1 to 1000
+  Record count            Maximum 10000 sets
+  Session consistency     One session = one date; no repeated exercise+set
+                          number inside a session
+  Calorie inputs          See section 6.4 (calculateCalories)
+  Muscle groups           1-4 groups, no duplicates
+
+
+================================================================================
+9. ALGORITHMS AND PROGRAMMING CONCEPTS USED
+================================================================================
+
+  Concept                       Where it is used
+  ----------------------------  ---------------------------------------------
+  Structures (struct)           WorkoutEntry, WorkoutDB
+  typedef                       Naming the structs
+  Dynamic memory                malloc / realloc / free in reserveEntries()
+                                and loadData()
+  Pointers                      Output parameters (*out), pointer to current
+                                record (e->...), array pointer db->data
+  Pass by reference             readInt/readDouble/convertWeight write results
+                                through pointers
+  Arrays                        Fixed buffers, groups[], movements[][]
+  Multi-dimensional arrays      exerciseOptions[7][3][2] (3D) in generatePlan
+  Strings                       strcmp, strcspn, strlen, snprintf, sscanf
+  Recursion                     findById() (binary search)
+  Searching                     Recursive binary search; linear filtering in
+                                showWorkouts() and showPR()
+  Sorting                       Insertion sort in sortEntries()
+  File handling                 fopen, fgetc, fprintf, fclose, rename, remove
+  Error handling                errno, perror, return codes, safe fallbacks
+  Input validation              strtol, strtod, isfinite, ValidDate
+  Modular programming           Six files, one shared header, include guard
+  Fixed-point storage           weight100 (kg x 100) instead of float
+  Atomic file replacement       Temp file + backup in saveData()
+
+
+================================================================================
+10. HOW TO BUILD AND RUN
+================================================================================
+
+=========
+CLI version:
+=========
+Requirements: a C compiler (GCC or Clang), any OS (Windows, Linux, macOS).
+All .c files and tracker.h must be in the same folder.
+
+    * Do NOT compile tracker.h on its own;compile all the files together and run main.c .
+    * Dev-C++ / Code::Blocks / VS Code: add all five .c files to the same
+      project so they are compiled and linked together.
+    * workouts.txt is created in the folder you run the program.
+
+=========
+GUI version:
+=========
+
+Same requirements;
+
+*Navigate to the GUI folder
+*Run the GymTrack application
+*save data after logging
+*workouts.txt is created in the folder you run the program.
+
+
+================================================================================
+11. SAMPLE USAGE AND OUTPUT
+================================================================================
+
+Logging sets (addSets):
+
+      Date YYYY-MM-DD: 2026-03-10
+      Exercise: Barbell bench press
+      How many sets (1-100)? 2
+      Set 1; weights are rounded to 0.01 kg.
+      Weight kg (0-1000): 60
+      Repetitions (1-1000): 10
+      Added set:
+         ID Sess Date          Set       kg      lb Reps
+          1     1 2026-03-10    1    60.00   132.28   10
+            Exercise: Barbell bench press
+      1 set(s) shown. Group by session ID and exercise.
+
+Calorie estimate (calculateCalories), example:
+      Current 70 kg -> goal 75 kg in 4 months, maintenance 2500 kcal/day
+
+      days            = 4 x 30.44 = 121.76
+      dailyAdjustment = (5 x 7700) / 121.76 = about +316 kcal
+      dailyCalories   = 2500 + 316 = about 2816 kcal
+
+      --- BULKING PLAN ---
+      Weight to gain: 5.00 kg | 11.02 lb
+      Target duration: 4.0 months
+      Estimated daily calories: 2816 kcal
+
+Workout plan (generatePlan), example with 1 muscle group (Chest):
+      Exercise                           Sets  Reps   Rest(seconds)
+
+      Chest:
+      Barbell flat press                    6  8-12 or to failure   180
+      Incline dumbbell press                6  8-12 or to failure   180
+      Cable fly                             6  8-12 or to failure   180
+
+Personal record (showPR), example:
+      Barbell bench press: highest recorded weight 70.00 kg / 154.32 lb
+       60.00 kg / 132.28 lb: 10 reps
+       70.00 kg / 154.32 lb: 6 reps
+
+
+================================================================================
+12. FUTURE IMPROVEMENTS
+================================================================================
+
+  - Search by date or date range.
+  - Faster sorting (qsort or merge sort) for large histories.
+  - Estimated one-rep max (1RM) for each exercise.
+  - Per-user profiles (login/register) with separate data files.
+  - Export history to CSV.
+  - More Excercise Variations and options
+  - Cardio/Crossfit Options 
+
+================================================================================
+                              END OF DOCUMENT
+================================================================================
