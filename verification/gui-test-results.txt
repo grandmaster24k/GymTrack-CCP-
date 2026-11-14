@@ -1,0 +1,144 @@
+PASS 1: native main window and record table exist
+PASS 2: test starts with a separate empty data directory
+PASS 3: initial native table is empty
+PASS 4: Log sets opens the real native form
+PASS 5: logging form owns the disabled main window
+PASS 6: invalid calendar date immediately shows feedback and disables actions
+PASS 7: invalid date cannot stage a set even through a direct command
+PASS 8: invalid date cannot commit or consume record and session IDs
+PASS 9: invalid calendar date immediately shows feedback and disables actions
+PASS 10: invalid date cannot stage a set even through a direct command
+PASS 11: invalid date cannot commit or consume record and session IDs
+PASS 12: invalid calendar date immediately shows feedback and disables actions
+PASS 13: invalid date cannot stage a set even through a direct command
+PASS 14: invalid date cannot commit or consume record and session IDs
+PASS 15: invalid calendar date immediately shows feedback and disables actions
+PASS 16: invalid date cannot stage a set even through a direct command
+PASS 17: invalid date cannot commit or consume record and session IDs
+PASS 18: invalid calendar date immediately shows feedback and disables actions
+PASS 19: invalid date cannot stage a set even through a direct command
+PASS 20: invalid date cannot commit or consume record and session IDs
+PASS 21: invalid calendar date immediately shows feedback and disables actions
+PASS 22: invalid date cannot stage a set even through a direct command
+PASS 23: invalid date cannot commit or consume record and session IDs
+PASS 24: invalid calendar date immediately shows feedback and disables actions
+PASS 25: invalid date cannot stage a set even through a direct command
+PASS 26: invalid date cannot commit or consume record and session IDs
+PASS 27: invalid calendar date immediately shows feedback and disables actions
+PASS 28: invalid date cannot stage a set even through a direct command
+PASS 29: invalid date cannot commit or consume record and session IDs
+PASS 30: invalid calendar date immediately shows feedback and disables actions
+PASS 31: invalid date cannot stage a set even through a direct command
+PASS 32: invalid date cannot commit or consume record and session IDs
+PASS 33: correcting the date to a valid leap day or boundary year re-enables actions
+PASS 34: correcting the date to a valid leap day or boundary year re-enables actions
+PASS 35: correcting the date to a valid leap day or boundary year re-enables actions
+PASS 36: correcting the date to a valid leap day or boundary year re-enables actions
+PASS 37: first set enters the staging table
+PASS 38: staged weight rounds to hundredths and stores repetitions
+PASS 39: changing an already staged session to an invalid date blocks commit without losing its preview
+PASS 40: second set has independent weight and repetitions
+PASS 41: Update selected changes the staged set
+PASS 42: Remove selected deletes only the staged row
+PASS 43: committing closes the form and re-enables the main window
+PASS 44: committing stores two actual records and refreshes the table
+PASS 45: logged sets share a session and receive distinct IDs
+PASS 46: committed rows preserve both per-set values
+PASS 47: another session can be opened
+PASS 48: another session advances record and session counters
+PASS 49: sidebar navigates to workout records
+PASS 50: exercise search filters the real table
+PASS 51: exercise search retains exact case-sensitive semantics
+PASS 52: record-ID search returns the requested record
+PASS 53: Clear restores all records
+PASS 54: date sorting orders dates then equal-date record IDs
+PASS 55: record-ID sorting restores ascending IDs
+PASS 56: selecting a record enables Edit set
+PASS 57: Edit set opens the selected record in the native editor
+PASS 58: record date remains fixed in the editor
+PASS 59: Save changes commits the edited weight and repetitions
+PASS 60: editing preserves record ID, session ID, date and set number
+PASS 61: sidebar opens personal records
+PASS 62: PR report shows the current heaviest load and reps at each load
+PASS 63: PR exercise filter excludes other exercises
+PASS 64: choosing a muscle group populates its native exercise controls
+PASS 65: plan generation uses the selected exercise variations
+PASS 66: two selected groups produce the original sets, reps and rest values
+PASS 67: calorie form computes and displays the original kg formula
+PASS 68: pounds selection and maintenance result work through the form
+PASS 69: Save data writes HT1 and clears the unsaved flag
+PASS 70: delete bridge removes a saved row without reusing IDs
+PASS 71: table refresh reflects deletion while preserving the next ID
+PASS 72: reload restores the saved edited records and counters
+PASS 73: native table refreshes after reload
+PASS 74: a later Save data creates the original backup file
+PASS 75: sidebar returns to the overview
+PASS 76: a new draft can be opened after all operations
+PASS 77: Cancel leaves all records and counters unchanged
+PASS 78: a valid leap-day logging form opens
+PASS 79: a real leap day can stage a set
+PASS 80: 2024-02-29 commits successfully with preserved exact date and correct IDs
+PASS 81: page change starts a visible cached rendering surface with a 72 pixel slide
+PASS 82: live controls keep their geometry and are hidden beneath the visible animation surface
+LIVE MOTION: 27 timer ticks, 26 rendered frames, 20 distinct slide positions
+RENDERER: Direct2D; last result 0x00000000
+FRAME TIMING: mean 15.87 ms, worst 26.67 ms, maximum compose/present 26.60 ms
+PASS 83: 420 ms live transition renders at least 20 frames with no gap reaching 50 ms
+PASS 84: animation ends without an active timer or displaced controls
+PASS 85: live controls become visible at exactly their original destination
+PASS 86: outgoing and incoming page captures contain different rendered content
+PASS 87: actual rendering surfaces export for visual inspection
+PASS 88: transition frame exports for visual inspection
+PASS 89: transition frame exports for visual inspection
+PASS 90: transition frame exports for visual inspection
+PASS 91: transition frame exports for visual inspection
+PASS 92: transition frame exports for visual inspection
+PASS 93: transition frame exports for visual inspection
+PASS 94: transition frame exports for visual inspection
+PASS 95: transition frame exports for visual inspection
+PASS 96: transition frame exports for visual inspection
+PASS 97: transition frame exports for visual inspection
+PASS 98: transition frame exports for visual inspection
+PASS 99: transition frame exports for visual inspection
+PASS 100: transition frame exports for visual inspection
+PASS 101: transition frame exports for visual inspection
+PASS 102: transition frame exports for visual inspection
+PASS 103: transition frame exports for visual inspection
+PASS 104: transition frame exports for visual inspection
+PASS 105: transition frame exports for visual inspection
+PASS 106: transition frame exports for visual inspection
+PASS 107: transition frame exports for visual inspection
+PASS 108: transition frame exports for visual inspection
+PASS 109: transition frame exports for visual inspection
+PASS 110: transition frame exports for visual inspection
+PASS 111: transition frame exports for visual inspection
+PASS 112: transition frame exports for visual inspection
+PAGE 2 SIZE 1823x952: 26 frames; mean 16.11 ms, worst 28.26 ms; render 1.07 ms; preparation 218.25 ms
+PASS 113: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 3 SIZE 1823x952: 24 frames; mean 17.40 ms, worst 31.99 ms; render 2.34 ms; preparation 209.64 ms
+PASS 114: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 4 SIZE 1823x952: 27 frames; mean 15.62 ms, worst 17.23 ms; render 1.71 ms; preparation 157.79 ms
+PASS 115: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 0 SIZE 1823x952: 26 frames; mean 15.47 ms, worst 16.83 ms; render 1.32 ms; preparation 356.35 ms
+PASS 116: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 1 SIZE 1823x952: 26 frames; mean 15.73 ms, worst 20.61 ms; render 2.70 ms; preparation 381.24 ms
+PASS 117: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 2 SIZE 1920x974: 26 frames; mean 16.02 ms, worst 25.41 ms; render 1.78 ms; preparation 275.14 ms
+PASS 118: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 3 SIZE 1920x974: 25 frames; mean 16.90 ms, worst 31.61 ms; render 1.60 ms; preparation 255.29 ms
+PASS 119: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 4 SIZE 1920x974: 26 frames; mean 16.07 ms, worst 26.56 ms; render 2.89 ms; preparation 195.31 ms
+PASS 120: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 0 SIZE 1920x974: 27 frames; mean 15.71 ms, worst 18.31 ms; render 1.15 ms; preparation 234.48 ms
+PASS 121: each page at normal and maximized size meets the live frame pacing threshold
+PAGE 1 SIZE 1920x974: 27 frames; mean 15.58 ms, worst 16.58 ms; render 2.52 ms; preparation 317.39 ms
+PASS 122: each page at normal and maximized size meets the live frame pacing threshold
+PASS 123: twenty native transitions do not accumulate GDI resources
+PASS 124: rapid navigation safely restarts the native transition
+PASS 125: resizing restores control positions and cancels animation
+PASS 126: reduced-motion navigation skips movement
+PASS 127: Preview explicitly enables motion and starts visible movement
+PASS 128: Motion Off stops animation and restores controls
+PASS 129: animation and its controls do not alter workout data
+PASSED: 129 native GUI integration checks.
+Confirmation dialogs and visual layout require separate manual checks.

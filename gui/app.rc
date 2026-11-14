@@ -1,0 +1,26 @@
+#include <windows.h>
+
+101 ICON "assets/gymtrack.ico"
+1 RT_MANIFEST "gui/app.manifest"
+
+1 VERSIONINFO
+FILEVERSION 1,4,0,0
+PRODUCTVERSION 1,4,0,0
+FILEOS VOS_NT_WINDOWS32
+FILETYPE VFT_APP
+BEGIN
+  BLOCK "StringFileInfo"
+  BEGIN
+    BLOCK "040904E4"
+    BEGIN
+      VALUE "FileDescription", "GymTrack Desktop\0"
+      VALUE "ProductName", "GymTrack\0"
+      VALUE "FileVersion", "1.4.0\0"
+      VALUE "OriginalFilename", "GymTrack.exe\0"
+    END
+  END
+  BLOCK "VarFileInfo"
+  BEGIN
+    VALUE "Translation", 0x0409, 1252
+  END
+END
